@@ -2,6 +2,7 @@ package com.github.tmh0n3y;
 
 import java.io.ByteArrayInputStream;
 import java.security.PublicKey;
+import java.security.Signature;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Base64;
@@ -33,6 +34,24 @@ public class ValidationService {
         X509Certificate cert = (X509Certificate) certFactory.generateCertificate(new ByteArrayInputStream(certBytes));
 
         return cert.getPublicKey();
+    }
+
+    public boolean verifySignature(String headerAndPayload, String base64UrlSignature, PublicKey publicKey) {
+        try {
+            //signature initialization with SHA256withRSA algorithm
+            Signature signature = Signature.getInstance("SHA256withRSA");
+            signature.initVerify(publicKey);
+
+            //add the signed data
+            signature.update(headerAndPayload.getBytes());
+
+            //add the signature bytes from base64
+            byte[] signatureBytes = Base64.getUrlDecoder().decode(base64UrlSignature);
+
+            return signature.verify(signatureBytes);
+        } catch (Exception e) {
+            return false;
+        }
     }
 
 

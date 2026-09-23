@@ -14,10 +14,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @RestController
 public class AuthController {
 
-    private final ValidationService ValidationService; 
+    private final ValidationService validationService; 
 
-    public AuthController(ValidationService ValidationService) {
-        this.ValidationService = ValidationService;
+    public AuthController(ValidationService validationService) {
+        this.validationService = validationService;
     }
 
     @GetMapping("/auth")
@@ -54,11 +54,19 @@ public class AuthController {
         //fetch public key
         PublicKey publicKey;
         try {
-            publicKey = ValidationService.fetchPublicKey(x5uUrl);
+            publicKey = validationService.fetchPublicKey(x5uUrl);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(new AuthResponse(false, "Failed to retrieve public key from x5u URL."));
         }
 
+        //verify signature
+        String headerAndPayload = parts[0] + "." + parts[1];
+        
+        boolean isValid = validationService.verifySignature(headerAndPayload, parts[2], publicKey);
+
+        if (!isValid) {
+            return ResponseEntity.badRequest().body(new AuthResponse(false, "Invalid JWT signature."));
+        }
 
         //after all checks passed its valid!!
         return ResponseEntity.ok(new AuthResponse(true));
