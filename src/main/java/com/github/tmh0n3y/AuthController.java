@@ -1,5 +1,6 @@
 package com.github.tmh0n3y;
 
+import java.security.PublicKey;
 import java.util.Base64;
 
 import org.springframework.http.ResponseEntity;
@@ -12,6 +13,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 @RestController
 public class AuthController {
+
+    private final ValidationService ValidationService; 
+
+    public AuthController(ValidationService ValidationService) {
+        this.ValidationService = ValidationService;
+    }
 
     @GetMapping("/auth")
     public ResponseEntity<AuthResponse> validateJwt(@RequestHeader(value = "Authorization", required = false) String authHeader) { //get auth header without throwing exception if null
@@ -43,6 +50,15 @@ public class AuthController {
         } catch (Exception e) {
            return ResponseEntity.badRequest().body(new AuthResponse(false, "Failed to decode or parse JWT header."));
         }
+
+        //fetch public key
+        PublicKey publicKey;
+        try {
+            publicKey = ValidationService.fetchPublicKey(x5uUrl);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new AuthResponse(false, "Failed to retrieve public key from x5u URL."));
+        }
+
 
         //after all checks passed its valid!!
         return ResponseEntity.ok(new AuthResponse(true));
