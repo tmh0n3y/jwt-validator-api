@@ -1,12 +1,14 @@
 package com.github.tmh0n3y;
 
 import java.io.ByteArrayInputStream;
+import java.net.URI;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Base64;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -22,6 +24,9 @@ public class ValidationService {
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
 
+    @Value("${jwt.trusted.host:localhost}")
+    private String trustedHost;
+
     public ValidationService() {
         this.restTemplate = new RestTemplate();
         this.objectMapper = new ObjectMapper();
@@ -34,8 +39,22 @@ public class ValidationService {
      * @return the extracted {@link PublicKey} for signature verification
      * @throws IllegalArgumentException if the HTTP response body is empty or null
      * @throws Exception if fetching, decoding, or parsing the certificate fails
+     * @throws SecurityException if the URL does not use HTTPS or if the host is not trusted
      */
     public PublicKey fetchPublicKey(String x5uUrl) throws Exception {
+        URI uri = new URI(x5uUrl);
+
+        //ensure https protocol
+        if (!"https".equalsIgnoreCase(uri.getScheme())) {
+            throw new SecurityException("x5u URL must use HTTPS.");
+        }
+        
+        //ensure host is trusted
+        String host = uri.getHost();
+        if (host == null || !host.equals(trustedHost)) {
+            throw new SecurityException("Untrusted x5u URL host: " + host);
+        }
+
         //get raw pem certificate from x5u url
         String certPem = restTemplate.getForObject(x5uUrl, String.class);
 
