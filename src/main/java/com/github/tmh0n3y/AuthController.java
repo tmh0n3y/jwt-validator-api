@@ -11,6 +11,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+/**
+ * REST controller that handles incoming authentication requests by validating JSON Web Tokens.
+ */
 @RestController
 public class AuthController {
 
@@ -20,6 +23,18 @@ public class AuthController {
         this.validationService = validationService;
     }
 
+    /**
+     * Validates an incoming JWT from the Authorization header.
+     * Checks structure, decodes header claims, checks timestamps (iat/exp), fetches public key via x5u URL, and verifies the cryptographic signature.
+     * 
+     * @param authHeader the HTTP Authorization header expected in "Bearer &lt;token&gt;" format
+     * @return {@link ResponseEntity} containing {@link AuthResponse}:
+     *         <ul>
+     *           <li><b>200 OK</b> - Token is structurally fine, unexpired, and signature matches</li>
+     *           <li><b>400 Bad Request</b> - Malformed header, missing parts, bad JSON, or certificate fetch failure</li>
+     *           <li><b>401 Unauthorized</b> - Invalid or expired timestamps or failed signature verification</li>
+     *         </ul>
+     */
     @GetMapping("/auth")
     public ResponseEntity<AuthResponse> validateJwt(@RequestHeader(value = "Authorization", required = false) String authHeader) { //get auth header without throwing exception if null
 
