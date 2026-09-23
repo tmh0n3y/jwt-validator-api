@@ -69,7 +69,6 @@ public class ValidationService {
         }
     }
 
-
     public boolean verifySignature(String headerAndPayload, String base64UrlSignature, PublicKey publicKey) {
         try {
             //signature initialization with SHA256withRSA algorithm
