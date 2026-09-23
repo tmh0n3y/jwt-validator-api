@@ -51,6 +51,11 @@ public class AuthController {
            return ResponseEntity.badRequest().body(new AuthResponse(false, "Failed to decode or parse JWT header."));
         }
 
+        //check expiration and issue date
+        if (validationService.hasInvalidTimestamps(parts[1])) {
+            return ResponseEntity.badRequest().body(new AuthResponse(false, "Token has invalid timestamps."));
+        }
+
         //fetch public key
         PublicKey publicKey;
         try {
@@ -61,7 +66,7 @@ public class AuthController {
 
         //verify signature
         String headerAndPayload = parts[0] + "." + parts[1];
-        
+
         boolean isValid = validationService.verifySignature(headerAndPayload, parts[2], publicKey);
 
         if (!isValid) {
